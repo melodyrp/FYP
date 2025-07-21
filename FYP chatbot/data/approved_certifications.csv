@@ -1,0 +1,6 @@
+CertificationID,Title,Type,Status
+CERT001,ISO 9001:2015,Quality,Active
+CERT002,RoHS Compliance,Environmental,Active
+CERT003,REACH Compliance,Chemical,Active
+CERT004,ISO 14001,Environmental,Active
+CERT005,Conflict Minerals Report,Ethical,Pending

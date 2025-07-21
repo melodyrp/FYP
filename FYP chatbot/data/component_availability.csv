@@ -1,0 +1,6 @@
+ComponentID,ComponentName,Status,LeadTime
+C3001,Sensor Module A,Available,2 weeks
+C3002,Valve Type X,Low Stock,3 weeks
+C3003,Housing Unit Z,Backordered,6 weeks
+C3004,Battery Pack L,Available,1 week
+C3005,Processor Chip V,Discontinued,-

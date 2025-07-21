@@ -1,0 +1,4 @@
+VendorID,VendorName,Category,ContactPerson,Email,Phone,Region,Status
+V001,AlphaTech,Supplier,Jane Doe,jane@alphatech.com,+65-1234-5678,APAC,Active
+V002,BetaLogistics,Transport,John Smith,john@betalogs.com,+44-800-222-333,Europe,Approved
+V003,GammaMetals,Raw Materials,Alice Tan,alice@gammametals.cn,+86-10-5555-6666,China,Pending

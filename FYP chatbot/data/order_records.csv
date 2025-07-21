@@ -1,0 +1,4 @@
+OrderID,VendorID,Item,Quantity,UnitPrice,TotalPrice,OrderDate,DeliveryDate,Status
+ORD1001,V001,Steel Rod,500,10,5000,10/6/2024,20/6/2024,Shipped
+ORD1002,V003,Copper Sheet,300,12.5,3750,11/6/2024,25/6/2024,Pending
+ORD1003,V002,Transport Service,1,2000,2000,12/6/2024,13/6/2024,Delivered
