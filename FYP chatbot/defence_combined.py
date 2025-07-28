@@ -13,6 +13,16 @@ import google.generativeai as genai
 import json
 import re #re is used for regex filtering
 
+# FOR LOGS
+LOG_FILE = "terminal_log.txt"
+def log_terminal(message: str):
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    full_message = f"[{timestamp}] {message}"
+    print(full_message)
+    with open(LOG_FILE, "a", encoding="utf-8") as f:
+        f.write(full_message + "\n")
+
+
 # === Inject Blue Theme CSS ===
 st.markdown("""
     <style>
@@ -100,7 +110,7 @@ prompt_library = {
     ]
 }
 
-# ---------------------- Prompt Leak Defense Code (Llama3.2) Starts Here ----------------------
+# ---------------------- Defense Code functions (Llama3.2) Starts Here ----------------------
 
 def filter_output(response):
     """
@@ -120,8 +130,18 @@ def filter_output(response):
     ]
     lowered = response.lower()
     if any(keyword in lowered for keyword in suspicious_keywords):
+        log_terminal(f"Blocked suspicious response: {response}")
         return "[Response blocked due to restricted information request.]"
     return response
+
+
+# Extract trusted terms from the combined string returned by load_internal_excel_data()
+
+
+
+# ---------------------- Defense Code functions (Llama3.2) Ends Here ----------------------
+
+
 
 # === Setup state ===
 if "chat_model" not in st.session_state:
@@ -220,6 +240,9 @@ def change_model():
     else:
         intro = f"👋 You are now chatting with {selected_model}."
     st.session_state.chat_history.append({"role": "bot", "message": intro, "timestamp": datetime.now().strftime('%H:%M')})
+    #For logging
+    log_terminal(f"Model switched to: {selected_model}")
+
 
 # === ChatBot Response ===
 def chatbot_response(user_input):
@@ -327,7 +350,7 @@ for chat in st.session_state.chat_history:
             </div>
         """, unsafe_allow_html=True)
 
-# === User Input ===
+
 # === User Input ===
 if prompt := st.chat_input("Type your message here..."):
     user_message = prompt.strip()
@@ -336,13 +359,36 @@ if prompt := st.chat_input("Type your message here..."):
     blocked_phrases = ["ignore previous instructions", "act as a", "pretend to be", "override"]
     if any(phrase in user_message.lower() for phrase in blocked_phrases):
         st.warning("Your input has been flagged. Please rephrase your request.")
-        user_message = "I want to talk about the stock market."
-        print(f"Blocked prompt injection attempt: {user_message}")
+        user_message = "[Blocked: Potential Prompt Injection Attempt]"
+        log_terminal(f"Blocked Prompt Injection Attempt: {user_message}")
 
     if re.search(r'\{.*?\(\".*?\".*?\).*?\}', user_message):
         st.warning("Your input contains potentially executable patterns. Please rephrase.")
-        user_message = "Let's discuss recent market trends."
+        user_message = "[Blocked: Code-like injection attempt]"
         print(f"Blocked code-like injection attempt: {user_message}")
+
+    # Block inputs that look like CSV-style injections (e.g., component rows)(for supplylink llama3.2)
+    csv_row_pattern = re.compile(r'^[A-Z0-9\-]+,.*?,.*?,.*')  # simple 4+ column CSV-like structure
+    if csv_row_pattern.match(user_message):
+        st.warning("Your input resembles a CSV record, which is not allowed.")
+        user_message = "[Blocked: Potential CSV injection attempt.]"
+        print(f"Blocked CSV-style injection attempt: {prompt}")
+
+    # Block jailbreak attempts (for llama3.2)
+    jailbreak_phrases = [
+        "let's pretend", "simulate a chatbot", "assume you can", "you are now", "from now on", 
+        "ignore all restrictions", "bypass", "roleplay as", "you must say", 
+        "act unrestricted", "remove all filters", "you are allowed to", "let's roleplay"
+    ]
+    # Check for jailbreak phrases only for Llama3.2
+    if (
+        st.session_state.chat_model == "Llama3.2" and 
+        any(phrase in user_message.lower() for phrase in jailbreak_phrases)
+    ):
+        st.warning("Potential jailbreaking pattern detected in your message.")
+        log_terminal(f"Blocked Jailbreak Attempt: {user_message}")
+        user_message = "[Blocked: Potential jailbreak pattern]"
+
 
     if user_message:
         time_now = datetime.now().strftime('%H:%M')
@@ -356,12 +402,13 @@ if prompt := st.chat_input("Type your message here..."):
         # ⬇️ Instantly show user's message
         st.markdown(f"""
             <div style="text-align: right;">
-                <div style="display: inline-block; background-color: #ffcccc; padding: 10px; border-radius: 10px; margin: 5px; max-width: 80%; text-align: left;">
+                <div style="display: inline-block; background-color: #cce0ff; padding: 10px; border-radius: 10px; margin: 5px; max-width: 80%; text-align: left;">
                     <p style="margin: 0;">{user_message}</p>
                     <span style="font-size: 0.8em; color: gray;">{time_now}</span>
                 </div>
             </div>
         """, unsafe_allow_html=True)
+
 
         with st.spinner("Generating response..."):
             bot_response = chatbot_response(user_message)
@@ -373,12 +420,43 @@ if prompt := st.chat_input("Type your message here..."):
                 "model": st.session_state.chat_model
             })
 
-            # Show bot response
+            # Show bot response with consistent style
             st.markdown(f"""
                 <div style="text-align: left;">
-                    <div style="display: inline-block; background-color: #ffe6e6; padding: 10px; border-radius: 10px; margin: 5px; max-width: 80%; text-align: left;">
+                    <div style="display: inline-block; background-color: #e6f0ff; padding: 10px; border-radius: 10px; margin: 5px; max-width: 80%; text-align: left;">
                         <p style="margin: 0;">{bot_response}</p>
-                        <span style="font-size: 0.8em; color: #b30000;">{bot_time}</span>
+                        <span style="font-size: 0.8em; color: gray;">{bot_time}</span>
                     </div>
                 </div>
             """, unsafe_allow_html=True)
+
+        with st.spinner("Generating response..."):
+            bot_response = chatbot_response(user_message)
+
+            # === Output Filtering: GPT-specific role leakage prevention ===
+            if st.session_state.chat_model == "GPT-4":
+                if "I am not supposed to" in bot_response or "As an AI" in bot_response:
+                    log_terminal(f"Blocked GPT leakage: {bot_response}")
+                    bot_response = "I am programmed to provide information about the stock market."
+                    print("Output filter triggered")
+                    
+
+            bot_time = datetime.now().strftime('%H:%M')
+            st.session_state.chat_history.append({
+                "role": "bot",
+                "message": bot_response,
+                "timestamp": bot_time,
+                "model": st.session_state.chat_model
+            })
+
+            # Show bot response with consistent style
+            st.markdown(f"""
+                <div style="text-align: left;">
+                    <div style="display: inline-block; background-color: #e6f0ff; padding: 10px; border-radius: 10px; margin: 5px; max-width: 80%; text-align: left;">
+                        <p style="margin: 0;">{bot_response}</p>
+                        <span style="font-size: 0.8em; color: gray;">{bot_time}</span>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+
+
