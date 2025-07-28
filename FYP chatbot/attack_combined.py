@@ -234,8 +234,29 @@ st.sidebar.radio(
 )
 st.sidebar.markdown(f"<span style='color: purple; font-weight: bold;'>Active model: {st.session_state.chat_model}</span>", unsafe_allow_html=True)
 
+if st.sidebar.button("Clear Chat"):
+    st.session_state.clear()
+    st.rerun()
 
-# === User Input ===
+
+
+# === Chat History Display ===
+for chat in st.session_state.chat_history:
+    if chat["role"] != "uploader":
+        align = "right" if chat["role"] == "user" else "left"
+        bubble_color = "#ffcccc" if chat["role"] == "user" else "#ffe6e6"
+        timestamp_color = "gray" if chat["role"] == "user" else "#b30000"
+
+        st.markdown(f"""
+            <div style="text-align: {align};">
+                <div style="display: inline-block; background-color: {bubble_color}; padding: 10px; border-radius: 10px; margin: 5px; max-width: 80%; text-align: left;">
+                    <p style="margin: 0;">{chat['message']}</p>
+                    <span style="font-size: 0.8em; color: {timestamp_color};">{chat['timestamp']}</span>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+
 # === User Input ===
 if prompt := st.chat_input("Type your message here..."):
     user_message = prompt.strip()
