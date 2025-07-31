@@ -412,26 +412,6 @@ if prompt := st.chat_input("Type your message here..."):
 
         with st.spinner("Generating response..."):
             bot_response = chatbot_response(user_message)
-            bot_time = datetime.now().strftime('%H:%M')
-            st.session_state.chat_history.append({
-                "role": "bot",
-                "message": bot_response,
-                "timestamp": bot_time,
-                "model": st.session_state.chat_model
-            })
-
-            # Show bot response with consistent style
-            st.markdown(f"""
-                <div style="text-align: left;">
-                    <div style="display: inline-block; background-color: #e6f0ff; padding: 10px; border-radius: 10px; margin: 5px; max-width: 80%; text-align: left;">
-                        <p style="margin: 0;">{bot_response}</p>
-                        <span style="font-size: 0.8em; color: gray;">{bot_time}</span>
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
-
-        with st.spinner("Generating response..."):
-            bot_response = chatbot_response(user_message)
 
             # === Output Filtering: GPT-specific role leakage prevention ===
             if st.session_state.chat_model == "GPT-4":
