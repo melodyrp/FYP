@@ -372,7 +372,7 @@ if prompt := st.chat_input("Type your message here..."):
     if csv_row_pattern.match(user_message):
         st.warning("Your input resembles a CSV record, which is not allowed.")
         user_message = "[Blocked: Potential CSV injection attempt.]"
-        print(f"Blocked CSV-style injection attempt: {prompt}")
+        log_terminal(f"Blocked CSV-style injection attempt: {prompt}")
 
     # Block jailbreak attempts (for llama3.2)
     jailbreak_phrases = [
